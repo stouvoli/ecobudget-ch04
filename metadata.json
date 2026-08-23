@@ -1,0 +1,6 @@
+{
+  "name": "EcoBudget",
+  "description": "Application de gestion et de suivi de budget des dépenses du quotidien",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
