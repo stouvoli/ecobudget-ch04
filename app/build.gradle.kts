@@ -10,7 +10,7 @@ android {
   compileSdk = 36
 
   defaultConfig {
-    applicationId = "com.aistudio.ecobudget.trck"
+    applicationId = "com.example"
     minSdk = 24
     targetSdk = 36
     versionCode = 1
@@ -75,7 +75,8 @@ dependencies {
   implementation(libs.androidx.lifecycle.runtime.ktx)
   implementation(libs.androidx.lifecycle.viewmodel.compose)
   implementation(libs.kotlinx.coroutines.android)
-  implementation(libs.kotlinx.coroutines.core)
+
+  implementation(project(":shared"))
 
   testImplementation(libs.androidx.compose.ui.test.junit4)
   testImplementation(libs.androidx.core)
