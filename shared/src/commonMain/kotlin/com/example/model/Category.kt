@@ -5,12 +5,14 @@ import ecobudget.shared.generated.resources.category_alimentation
 import ecobudget.shared.generated.resources.category_logement
 import ecobudget.shared.generated.resources.category_loisirs
 import ecobudget.shared.generated.resources.category_transport
+import kotlinx.serialization.Serializable
 import org.jetbrains.compose.resources.StringResource
 
 
 /**
  * Représente les catégories obligatoires pour la classification des dépenses dans EcoBudget.
  */
+@Serializable
 enum class Category(
     val labelResId: StringResource,
     val emoji: String

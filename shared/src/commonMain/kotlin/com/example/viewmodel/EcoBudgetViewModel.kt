@@ -3,11 +3,13 @@ package com.example.viewmodel
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.data.repository.FakeTransactionRepository
 import com.example.data.repository.TransactionRepository
+import com.example.di.AppModule
 import com.example.model.Category
 import com.example.model.Transaction
 import com.example.model.YearMonth
+import com.example.utils.generateUUID
+import com.example.utils.getCurrentTimeMillis
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -16,8 +18,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.util.Calendar
-import java.util.UUID
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.TimeZone
 
 /**
  * Classe de données immuable représentant l'état complet de l'interface pour EcoBudget.
@@ -36,7 +39,7 @@ import java.util.UUID
  */
 @Immutable
 data class EcoBudgetUiState(
-    val currentMonth: YearMonth = YearMonth.current(),
+    val currentMonth: YearMonth = YearMonth.Companion.current(),
     val filteredTransactions: List<Transaction> = emptyList(),
     val monthTransactions: List<Transaction> = emptyList(),
     val allTransactions: List<Transaction> = emptyList(),
@@ -46,7 +49,10 @@ data class EcoBudgetUiState(
     val categorySpent: Double = 0.0,
     val remainingBudget: Double = 500000.0,
     val isAddDialogOpen: Boolean = false,
-    val editingTransaction: Transaction? = null
+    val editingTransaction: Transaction? = null,
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null
+
 ) {
     /**
      * Indique si toutes les catégories sont actuellement sélectionnées / affichées.
@@ -73,10 +79,16 @@ data class EcoBudgetUiState(
  * @param repository Dépôt de données pour les transactions.
  */
 class EcoBudgetViewModel(
-    private val repository: TransactionRepository = FakeTransactionRepository()
+    private val repository: TransactionRepository = AppModule.transactionRepository
 ) : ViewModel() {
 
-    private val _currentMonth = MutableStateFlow(YearMonth.current())
+    // Flux internes dédiés aux données distantes et statuts réseau
+    private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
+    private val _isLoading = MutableStateFlow(false)
+    private val _errorMessage = MutableStateFlow<String?>(null)
+
+    // Flux internes de filtrage et d'interface
+    private val _currentMonth = MutableStateFlow(YearMonth.Companion.current())
     private val _selectedCategories = MutableStateFlow<Set<Category>>(emptySet())
     private val _isAddDialogOpen = MutableStateFlow(false)
     private val _editingTransaction = MutableStateFlow<Transaction?>(null)
@@ -103,10 +115,12 @@ class EcoBudgetViewModel(
      * la sélection multi-catégories et les dialogues.
      */
     val uiState: StateFlow<EcoBudgetUiState> = combine(
-        repository.getTransactions(),
+        _transactions,
         _monthAndCategoriesFlow,
-        _dialogStateFlow
-    ) { transactions, monthAndCats, dialogs ->
+        _dialogStateFlow,
+        _isLoading,
+        _errorMessage
+    ) { transactions, monthAndCats, dialogs, isLoading, errorMessage ->
         val currentMonth = monthAndCats.first
         val selectedCategories = monthAndCats.second
         val monthlyBudget = monthAndCats.third
@@ -138,7 +152,9 @@ class EcoBudgetViewModel(
             categorySpent = catSpent,
             remainingBudget = remaining,
             isAddDialogOpen = isAddDialogOpen,
-            editingTransaction = editingTransaction
+            editingTransaction = editingTransaction,
+            isLoading = isLoading,
+            errorMessage = errorMessage
         )
     }
         .flowOn(Dispatchers.Default)
@@ -147,6 +163,32 @@ class EcoBudgetViewModel(
             started = SharingStarted.WhileSubscribed(5_000L),
             initialValue = EcoBudgetUiState()
         )
+
+
+    /**
+     * Charge les transactions depuis le serveur Cloud et gère les erreurs de débit (429).
+     */
+    fun loadTransactions() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
+            try {
+                _transactions.value = repository.getTransactions()
+            } catch (e: Exception) {
+                // 🔍 REMPLACEZ ICI pour afficher le détail exact à l'écran
+                e.printStackTrace()
+                _errorMessage.value = "${e::class.simpleName} : ${e.message}"
+//                val msg = if (e.message?.contains("429") == true) {
+//                    "Limite de requêtes atteinte (Erreur 429). Ralentissez la cadence."
+//                } else {
+//                    "Erreur réseau : impossible de joindre l'API Cloud."
+//                }
+//                _errorMessage.value = msg
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
 
     /**
      * Navigue vers le mois précédent.
@@ -166,7 +208,7 @@ class EcoBudgetViewModel(
      * Réinitialise la navigation sur le mois courant.
      */
     fun goToCurrentMonth() {
-        _currentMonth.value = YearMonth.current()
+        _currentMonth.value = YearMonth.Companion.current()
     }
 
     /**
@@ -235,19 +277,22 @@ class EcoBudgetViewModel(
             } else {
                 // Création d'une nouvelle transaction dans le mois affiché
                 val currentYearMonth = _currentMonth.value
-                val dateToUse = if (currentYearMonth == YearMonth.current()) {
-                    System.currentTimeMillis()
+                val dateToUse = if (currentYearMonth == YearMonth.Companion.current()) {
+                    getCurrentTimeMillis()
                 } else {
-                    val cal = Calendar.getInstance()
-                    cal.set(Calendar.YEAR, currentYearMonth.year)
-                    cal.set(Calendar.MONTH, currentYearMonth.month)
-                    cal.set(Calendar.DAY_OF_MONTH, 15)
-                    cal.set(Calendar.HOUR_OF_DAY, 12)
-                    cal.timeInMillis
+                    LocalDateTime(
+                        year = currentYearMonth.year,
+                        monthNumber = currentYearMonth.month,
+                        dayOfMonth = 15,
+                        hour = 12,
+                        minute = 0,
+                        second = 0,
+                        nanosecond = 0
+                    ).toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds()
                 }
 
                 val newTransaction = Transaction(
-                    id = UUID.randomUUID().toString(),
+                    id = generateUUID(),
                     title = title.trim(),
                     amount = amount,
                     date = dateToUse,

@@ -1,6 +1,7 @@
 package com.example.model
 
 import androidx.compose.runtime.Immutable
+import kotlinx.serialization.Serializable
 
 /**
  * Modèle de données immuable représentant une transaction / dépense au sein d'EcoBudget.
@@ -12,6 +13,7 @@ import androidx.compose.runtime.Immutable
  * @property category Catégorie associée à la dépense (TRANSPORT, ALIMENTATION, LOISIRS, LOGEMENT).
  */
 @Immutable
+@Serializable
 data class Transaction(
     val id: String,
     val title: String,
