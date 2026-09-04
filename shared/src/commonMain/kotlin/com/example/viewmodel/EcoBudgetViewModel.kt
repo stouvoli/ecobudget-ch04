@@ -273,7 +273,16 @@ class EcoBudgetViewModel(
                     amount = amount,
                     category = category
                 )
-                repository.updateTransaction(updated)
+                val previousList = _transactions.value
+                _transactions.value = previousList.map { if (it.id == updated.id) updated else it }
+                dismissDialog()
+                try {
+                    repository.updateTransaction(updated)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    _transactions.value = previousList
+                    _errorMessage.value = "${e::class.simpleName} : ${e.message}"
+                }
             } else {
                 // Création d'une nouvelle transaction dans le mois affiché
                 val currentYearMonth = _currentMonth.value
@@ -298,9 +307,20 @@ class EcoBudgetViewModel(
                     date = dateToUse,
                     category = category
                 )
-                repository.addTransaction(newTransaction)
+                val previousList = _transactions.value
+                _transactions.value = previousList + newTransaction
+                dismissDialog()
+                try {
+                    val created = repository.addTransaction(newTransaction)
+                    if (created.id != newTransaction.id) {
+                        _transactions.value = _transactions.value.map { if (it.id == newTransaction.id) created else it }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    _transactions.value = previousList
+                    _errorMessage.value = "${e::class.simpleName} : ${e.message}"
+                }
             }
-            dismissDialog()
         }
     }
 
@@ -309,7 +329,15 @@ class EcoBudgetViewModel(
      */
     fun deleteTransaction(id: String) {
         viewModelScope.launch {
-            repository.deleteTransaction(id)
+            val previousList = _transactions.value
+            _transactions.value = previousList.filterNot { it.id == id }
+            try {
+                repository.deleteTransaction(id)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _transactions.value = previousList
+                _errorMessage.value = "${e::class.simpleName} : ${e.message}"
+            }
         }
     }
 }
