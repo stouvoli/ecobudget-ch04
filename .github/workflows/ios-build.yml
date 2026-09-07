@@ -38,7 +38,7 @@ jobs:
       - name: Compresser le paquet pour simulateur
         run: |
           cd build/ios/Build/Products/Release-iphonesimulator
-          zip -r EcoBudget-Simulator.zip iosApp.app
+          zip -r EcoBudget-Simulator.zip EcoBudget.app
 
       - name: Sauvegarder l'artefact exécutable
         uses: actions/upload-artifact@v4
