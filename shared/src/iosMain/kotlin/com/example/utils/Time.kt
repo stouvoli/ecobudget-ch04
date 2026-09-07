@@ -1,3 +1,7 @@
 package com.example.utils
 
-actual fun getCurrentTimeMillis(): Long = (platform.Foundation.NSDate().timeIntervalSince1970 * 1000).toLong()
+import platform.Foundation.NSDate
+import platform.Foundation.timeIntervalSince1970
+
+actual fun getCurrentTimeMillis(): Long =
+    (NSDate().timeIntervalSince1970 * 1000).toLong()
