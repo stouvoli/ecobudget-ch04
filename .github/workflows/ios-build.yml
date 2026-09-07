@@ -1,0 +1,50 @@
+name: Build iOS Application
+
+on:
+  push:
+    branches: [ "Tests-ios" ]
+  workflow_dispatch:
+
+jobs:
+  build-ios-app:
+    runs-on: macos-14
+    steps:
+      - name: Cloner le dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Activer le cache Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Rendre gradlew exécutable
+        run: chmod +x gradlew
+
+      - name: Compiler le framework KMP
+        run: ./gradlew :shared:assembleEcoBudgetSharedXCFramework
+
+      - name: Assembler l'exécutable iOS (.app)
+        run: |
+          xcodebuild -project iosApp/iosApp.xcodeproj \
+            -scheme iosApp \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -derivedDataPath build/ios \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
+      - name: Compresser le paquet pour simulateur
+        run: |
+          cd build/ios/Build/Products/Release-iphonesimulator
+          zip -r EcoBudget-Simulator.zip iosApp.app
+
+      - name: Sauvegarder l'artefact exécutable
+        uses: actions/upload-artifact@v4
+        with:
+          name: EcoBudget-iOS-Executable
+          path: build/ios/Build/Products/Release-iphonesimulator/EcoBudget-Simulator.zip
