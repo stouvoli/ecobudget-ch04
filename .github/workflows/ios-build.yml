@@ -24,9 +24,6 @@ jobs:
       - name: Rendre gradlew exécutable
         run: chmod +x gradlew
 
-      - name: Compiler le framework KMP
-        run: ./gradlew :shared:assembleEcoBudgetSharedXCFramework
-
       - name: Assembler l'exécutable iOS (.app)
         run: |
           xcodebuild -project iosApp/iosApp.xcodeproj \
