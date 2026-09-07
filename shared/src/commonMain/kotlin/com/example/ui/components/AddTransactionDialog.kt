@@ -51,10 +51,19 @@ import com.example.ui.theme.DarkOutline
 import com.example.ui.theme.DarkTextSecondary
 import com.example.ui.theme.VioletPrimary
 import com.example.ui.theme.VioletPrimaryLight
-import org.jetbrains.compose.resources.stringResource
 import ecobudget.shared.generated.resources.Res
-import ecobudget.shared.generated.resources.*
-
+import ecobudget.shared.generated.resources.btn_add
+import ecobudget.shared.generated.resources.btn_cancel
+import ecobudget.shared.generated.resources.btn_save
+import ecobudget.shared.generated.resources.currency_fcfa
+import ecobudget.shared.generated.resources.dialog_title_edit
+import ecobudget.shared.generated.resources.dialog_title_new
+import ecobudget.shared.generated.resources.label_category
+import ecobudget.shared.generated.resources.label_transaction_amount
+import ecobudget.shared.generated.resources.label_transaction_title
+import ecobudget.shared.generated.resources.placeholder_transaction_amount
+import ecobudget.shared.generated.resources.placeholder_transaction_title
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Boîte de dialogue permettant l'enregistrement ou la modification d'une dépense.

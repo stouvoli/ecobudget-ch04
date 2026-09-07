@@ -4,11 +4,11 @@
     <selectionStates>
       <SelectionState runConfigName="EcoBudget.app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-08-23T20:46:26.740037800Z">
+        <DropdownSelection timestamp="2026-09-04T19:31:00.263628Z">
           <Target type="DEFAULT_BOOT">
-            <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\stouvoli\.android\avd\Small_Phone.avd" />
-            </handle>
+            <template>
+              <DeviceId pluginId="FirebaseDirectAccess" type="TEMPLATE" identifier="model_id=frankel/36" />
+            </template>
           </Target>
         </DropdownSelection>
         <DialogSelection />

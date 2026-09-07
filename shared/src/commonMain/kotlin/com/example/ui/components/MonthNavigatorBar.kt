@@ -56,7 +56,7 @@ fun MonthNavigatorBar(
     onCurrentMonthClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isCurrentCalendarMonth = currentMonth == YearMonth.current()
+    val isCurrentCalendarMonth = currentMonth == YearMonth.Companion.current()
 
     Surface(
         modifier = modifier

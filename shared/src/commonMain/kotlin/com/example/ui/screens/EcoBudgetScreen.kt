@@ -23,12 +23,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -38,20 +36,20 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import org.jetbrains.compose.resources.stringResource
-import ecobudget.shared.generated.resources.Res
-import ecobudget.shared.generated.resources.*
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.Check
 import com.example.model.Category
 import com.example.ui.components.AddTransactionDialog
 import com.example.ui.components.MonthNavigatorBar
@@ -64,8 +62,24 @@ import com.example.ui.theme.VioletCardHero
 import com.example.ui.theme.VioletPrimary
 import com.example.ui.theme.VioletPrimaryLight
 import com.example.viewmodel.EcoBudgetViewModel
-import java.text.NumberFormat
-import java.util.Locale
+import ecobudget.shared.generated.resources.Res
+import ecobudget.shared.generated.resources.all_categories_summary
+import ecobudget.shared.generated.resources.app_name
+import ecobudget.shared.generated.resources.app_subtitle
+import ecobudget.shared.generated.resources.budget_remaining_title
+import ecobudget.shared.generated.resources.budget_usage_percent_format
+import ecobudget.shared.generated.resources.content_desc_add_transaction
+import ecobudget.shared.generated.resources.content_desc_selected
+import ecobudget.shared.generated.resources.currency_fcfa
+import ecobudget.shared.generated.resources.empty_expenses_filtered_format
+import ecobudget.shared.generated.resources.empty_expenses_hint
+import ecobudget.shared.generated.resources.empty_expenses_month_format
+import ecobudget.shared.generated.resources.expense_count_month_format
+import ecobudget.shared.generated.resources.filter_all
+import ecobudget.shared.generated.resources.multiple_categories_selected_format
+import ecobudget.shared.generated.resources.total_spent_format
+import ecobudget.shared.generated.resources.transactions_detail_title_format
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Écran principal d'EcoBudget :
@@ -76,6 +90,7 @@ import java.util.Locale
  * - Suppression d'une dépense.
  * - Internationalisation complète via strings.xml.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EcoBudgetScreen(
     viewModel: EcoBudgetViewModel,
@@ -87,10 +102,15 @@ fun EcoBudgetScreen(
         viewModel.loadTransactions()
     }
 
-    val formatFcfa = remember {
-        val nf = NumberFormat.getNumberInstance(Locale.FRENCH)
-        nf.maximumFractionDigits = 0
-        nf
+    val formatAmount: (Double) -> String = remember {
+        { amount ->
+            amount.toLong()
+                .toString()
+                .reversed()
+                .chunked(3)
+                .joinToString(" ")
+                .reversed()
+        }
     }
 
     val onOpenAddDialog = remember(viewModel) { { viewModel.openAddDialog() } }
@@ -249,7 +269,7 @@ fun EcoBudgetScreen(
 
                             // Total des catégories sélectionnées
                             Text(
-                                text = "${formatFcfa.format(uiState.categorySpent)} $currencyFcfa",
+                                text = "${formatAmount(uiState.categorySpent)} $currencyFcfa",
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Bold
@@ -289,7 +309,7 @@ fun EcoBudgetScreen(
                     }
                 } else {
                     items(
-                        items = uiState.filteredTransactions,
+                        items = uiState.filteredTransactions.distinctBy { it.id },
                         key = { it.id }
                     ) { transaction ->
                         val onClickCard = remember(transaction, viewModel) {
@@ -369,10 +389,15 @@ private fun EcoBudgetOverviewCard(
         label = "budget_progress"
     )
 
-    val formatFcfa = remember {
-        val nf = NumberFormat.getNumberInstance(Locale.FRENCH)
-        nf.maximumFractionDigits = 0
-        nf
+    val formatAmount: (Double) -> String = remember {
+        { amount ->
+            amount.toLong()
+                .toString()
+                .reversed()
+                .chunked(3)
+                .joinToString(" ")
+                .reversed()
+        }
     }
 
     Surface(
@@ -424,7 +449,7 @@ private fun EcoBudgetOverviewCard(
                 modifier = Modifier.testTag("remaining_budget_text")
             ) {
                 Text(
-                    text = formatFcfa.format(remainingBudget),
+                    text = formatAmount(remainingBudget),
                     style = MaterialTheme.typography.displayMedium.copy(
                         fontSize = 36.sp,
                         fontWeight = FontWeight.ExtraBold
@@ -469,7 +494,7 @@ private fun EcoBudgetOverviewCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = stringResource(Res.string.total_spent_format, formatFcfa.format(totalSpent)),
+                    text = stringResource(Res.string.total_spent_format, formatAmount(totalSpent)),
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium

@@ -44,10 +44,6 @@ import ecobudget.shared.generated.resources.currency_fcfa
 import ecobudget.shared.generated.resources.date_today
 import ecobudget.shared.generated.resources.date_yesterday
 import org.jetbrains.compose.resources.stringResource
-import java.text.NumberFormat
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 /**
  * Composant atomique réutilisable pour afficher chaque dépense.
@@ -75,9 +71,13 @@ fun TransactionCard(
     }
 
     val formattedAmount = remember(transaction.amount, currencyFcfa) {
-        val nf = NumberFormat.getNumberInstance(Locale.FRENCH)
-        nf.maximumFractionDigits = 0
-        "${nf.format(transaction.amount)} $currencyFcfa"
+        val formattedNumber = transaction.amount.toLong()
+            .toString()
+            .reversed()
+            .chunked(3)
+            .joinToString(" ")
+            .reversed()
+        "$formattedNumber $currencyFcfa"
     }
 
     Surface(
@@ -181,30 +181,30 @@ fun TransactionCard(
     }
 }
 
-private val cardDateFormatFormatter = object : ThreadLocal<SimpleDateFormat>() {
-    override fun initialValue(): SimpleDateFormat {
-        return SimpleDateFormat("d MMM", Locale.FRANCE)
-    }
-}
+private val MONTHS_FR = listOf(
+    "janv.", "févr.", "mars", "avr.", "mai", "juin",
+    "juil.", "août", "sept.", "oct.", "nov.", "déc."
+)
 
 /**
- * Formate un timestamp en libellé lisible relatif (Aujourd'hui, Hier, ou date calendaire).
+ * Formate un timestamp (epoch millis) en libellé "d MMM" (ex: "14 févr.") en pur Kotlin.
  */
 fun formatRelativeDate(
     timestamp: Long,
     todayString: String = "Aujourd'hui",
     yesterdayString: String = "Hier"
 ): String {
-    val now = System.currentTimeMillis()
-    val diff = now - timestamp
-    val oneDay = 86400000L
+    // Calcul calendaire civil universel à partir de l'epoch (sans SimpleDateFormat)
+    val days = timestamp / 86_400_000L
+    val z = days + 719468
+    val era = (if (z >= 0) z else z - 146096) / 146097
+    val doe = (z - era * 146097).toInt()
+    val yoe = (doe - doe / 1024 + doe / 1461 - doe / 146096) / 365
+    val doy = doe - (365 * yoe + yoe / 4 - yoe / 100)
+    val mp = (5 * doy + 2) / 153
+    val day = doy - (153 * mp + 2) / 5 + 1
+    val month = mp + (if (mp < 10) 3 else -9) // Mois de 1 à 12
 
-    return when {
-        diff < 3600000L * 12 && diff >= 0 -> todayString
-        diff < oneDay * 2 && diff >= 0 -> yesterdayString
-        else -> {
-            val sdf = cardDateFormatFormatter.get() ?: SimpleDateFormat("d MMM", Locale.FRANCE)
-            sdf.format(Date(timestamp))
-        }
-    }
+    val monthLabel = MONTHS_FR.getOrElse(month - 1) { "" }
+    return "$day $monthLabel"
 }
